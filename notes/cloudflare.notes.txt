@@ -1,0 +1,7 @@
+https://github.com/weppos/publicsuffix-ruby/tree/v4.0.7
+
+https://github.com/ilude/joyride
+
+https://github.com/trev/rubyflare
+
+https://stackoverflow.com/questions/13270042/get-public-remote-ip-address
