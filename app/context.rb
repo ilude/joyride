@@ -1,5 +1,8 @@
 module Joyride
   HostnameLabel = "joyride.host.name"
+  CloudflareEnableLabel = "joyride.cloudflare.enable"
+  CloudflareProxyLabel = "joyride.cloudflare.proxy"
+
   class Context
     attr_reader :current_container, :running_containers, :current_container, :mutex, :updated_at, :domains, :log
 
