@@ -1,39 +1,40 @@
 #!/usr/bin/env ruby
-
 require 'docker'
-require 'erb'
 require 'json'
 require 'logger'
-require 'ostruct'
 require 'rufus-scheduler'
 
-require_relative 'context'
+require_relative 'logger'
 require_relative 'template'
 require_relative 'dns_generator'
 
-# no buffering output
-$stdout.sync = true
+updated_at = Time.now.to_i
 
-locator = {}
+module Joyride
+  HostnameLabel = "joyride.host.name".freeze
+  ContainerFilter = { status: ["running"], label: [HostnameLabel]  }.to_json.freeze
+  Mutex = Mutex.new
+end
 
-log = Logger.new($stdout) 
-log.formatter = proc { |severity, datetime, progname, msg| "#{msg}\n" }
-
-generator = Joyride::DnsGenerator.new(log) 
-context = Joyride::Context.new(log)
-
-define_singleton_method("log") { log }
-define_singleton_method("generator") { generator }
+generators = [Joyride::DnsGenerator.new(log), Joyride::CloudflareGenerator.new(log)] 
 
 scheduler = Rufus::Scheduler.new
 
-scheduler.every '3s', :first => :now, :mutex => context.mutex do
-  Docker::Event.since(context.updated_at, until: Time.now.to_i) {|event| context.process_event(event)}
-  
-  if context.dirty?
-    generator.process(context)
-    context.reset()
-  end
+scheduler.every '3s', :first => :now, :mutex => Joyride::Mutex do
+  events = Docker::Event.since(updated_at, until: updated_at = Time.now.to_i) 
+
+  # we are only intereseted in container start,stop and die events
+  # and those containers must have a HostnameLabel
+  return unless events.any?{|event| 
+    event.type.eql?("container") && 
+    ["start", "stop", "die"].include?(event.action) && 
+    event.actor.attributes.has_key?(Joyride::HostnameLabel)
+  }
+
+  containers = Docker::Container.all(all: true, filters: ContainerFilter)
+    .map{|container| Joyride::Container.new(container) }
+
+  generators.each{|generator| generator.process(containers)}
 end
 
 Kernel.trap( "INT" ) do 

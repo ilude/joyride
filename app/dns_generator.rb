@@ -1,33 +1,34 @@
+require 'erb'
+
 module Joyride
   class DnsGenerator
+    include Joyride::Logger
+    
+    attr_reader :template, :dnsmasq_process
 
-    protected attr_reader :template, :log, :dnsmasq_process
-
-    public 
-
-    def initialize(log)
-      @log = log
-      @template = Template.new("/etc/dnsmasq.d/hosts", "/app/templates/dnsmasq.hosts.erb", log)
+    def initialize()
+      self.template = Template.new("/etc/dnsmasq.d/hosts", "/app/templates/dnsmasq.hosts.erb", log)
 
       # write out basic dnsmasq.conf
       Template.new("/etc/dnsmasq.conf", "/app/templates/dnsmasq.conf.erb", log).write_template()
 
       #start dnsmasq
       log.info "Starting dnsmasq..."
-      @dnsmasq_process = fork { exec "/usr/sbin/dnsmasq" }
+      self.dnsmasq_process = fork { exec "/usr/sbin/dnsmasq" }
     end
 
-    def process(context)
-      log.info "Generating dnsmasq config with hosts:"
+    def process(containers)
+      domains = containers.uniq{|container| container.to_s }
 
-      context.domains.each do |domain|
+      log.info "Generating dnsmasq config with hosts:"
+      domains.each do |domain|
         log.info "\ttemplate => #{domain} #{ENV['HOSTIP']}"
       end
 
-      template.write_template({domains: context.domains})
+      template.write_template({domains: domains})
 
       log.info "Signaling dnsmasq to reload configuration... "
-      Process.kill("HUP", dnsmasq_process)
+      Process.kill("HUP", self.dnsmasq_process)
     end
   end
 end
