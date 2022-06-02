@@ -10,8 +10,11 @@ RUN \
   echo 'update: --no-document'; \
   } >> /usr/local/etc/gemrc \
   && apk add --no-cache \
+    build-base \
     bash \
     dnsmasq \
+    curl-dev \
+    musl-dev make openssl-dev \
     tzdata \
     htop \
   && update-ca-certificates \
@@ -25,7 +28,7 @@ RUN \
 
 WORKDIR /app
 
-COPY ./app/Gemfile /app/Gemfile
+COPY ./app/Gemfile* /app
 RUN bundle install
 
 COPY *-entrypoint.sh /usr/local/bin/

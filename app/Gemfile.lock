@@ -1,0 +1,35 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    concurrent-ruby (1.1.10)
+    curb (0.9.11)
+    docker-api (2.2.0)
+      excon (>= 0.47.0)
+      multi_json
+    et-orbi (1.2.7)
+      tzinfo
+    excon (0.92.3)
+    fugit (1.5.3)
+      et-orbi (~> 1, >= 1.2.7)
+      raabro (~> 1.4)
+    multi_json (1.15.0)
+    public_suffix (4.0.7)
+    raabro (1.4.0)
+    rubyflare (0.2.1)
+      curb (~> 0.9.3)
+    rufus-scheduler (3.8.1)
+      fugit (~> 1.1, >= 1.1.6)
+    tzinfo (2.0.4)
+      concurrent-ruby (~> 1.0)
+
+PLATFORMS
+  x86_64-linux-musl
+
+DEPENDENCIES
+  docker-api
+  public_suffix
+  rubyflare
+  rufus-scheduler
+
+BUNDLED WITH
+   2.2.22
