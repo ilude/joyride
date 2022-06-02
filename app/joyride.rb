@@ -16,20 +16,24 @@ module Joyride
   Mutex = Mutex.new
 end
 
-generators = [Joyride::DnsGenerator.new(log), Joyride::CloudflareGenerator.new(log)] 
+generators = [Joyride::DnsGenerator.new(), Joyride::CloudflareGenerator.new()] 
 
 scheduler = Rufus::Scheduler.new
 
 scheduler.every '3s', :first => :now, :mutex => Joyride::Mutex do
-  events = Docker::Event.since(updated_at, until: updated_at = Time.now.to_i) 
-
   # we are only intereseted in container start,stop and die events
   # and those containers must have a HostnameLabel
-  return unless events.any?{|event| 
-    event.type.eql?("container") && 
-    ["start", "stop", "die"].include?(event.action) && 
-    event.actor.attributes.has_key?(Joyride::HostnameLabel)
+  event = []
+  Docker::Event.since(updated_at, until: updated_at = Time.now.to_i) {|event| events << event}
+  events.select!{|event| 
+      event.type.eql?("container") && 
+      ["start", "stop", "die"].include?(event.action) && 
+      event.actor.attributes.has_key?("joyride.host.name")
   }
+
+  return if events.empty?
+  
+
 
   containers = Docker::Container.all(all: true, filters: ContainerFilter)
     .map{|container| Joyride::Container.new(container) }
